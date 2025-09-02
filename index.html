@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Анализатор баскетбольных ставок</title>
+    <title>Баскетбол. Калькулятор исходов</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -14,9 +14,33 @@
             -webkit-tap-highlight-color: transparent;
         }
         
+        :root {
+            --primary-color: #fdbb2d;
+            --secondary-color: #1a2a6c;
+            --background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            --container-bg: rgba(0, 0, 0, 0.7);
+            --text-color: #fff;
+            --card-bg: rgba(30, 30, 50, 0.8);
+            --input-bg: rgba(255, 255, 255, 0.9);
+            --input-color: #333;
+            --stats-bg: rgba(40, 40, 60, 0.6);
+        }
+        
+        body.light-theme {
+            --primary-color: #2c3e50;
+            --secondary-color: #fdbb2d;
+            --background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+            --container-bg: rgba(255, 255, 255, 0.9);
+            --text-color: #2c3e50;
+            --card-bg: rgba(255, 255, 255, 0.8);
+            --input-bg: rgba(255, 255, 255, 0.95);
+            --input-color: #2c3e50;
+            --stats-bg: rgba(255, 255, 255, 0.7);
+        }
+        
         body {
-            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
-            color: #fff;
+            background: var(--background);
+            color: var(--text-color);
             min-height: 100vh;
             padding: 10px;
             overflow-x: hidden;
@@ -29,47 +53,40 @@
         .container {
             max-width: 100%;
             margin: 0 auto;
-            background: rgba(0, 0, 0, 0.7);
+            background: var(--container-bg);
             border-radius: 12px;
             padding: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
         
         .theme-switcher {
             position: absolute;
             top: 15px;
             right: 15px;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.2);
             border-radius: 20px;
-            padding: 8px;
+            padding: 5px;
             display: flex;
             z-index: 100;
+            cursor: pointer;
         }
         
-        .theme-btn {
+        .theme-icon {
             width: 30px;
             height: 30px;
             border-radius: 50%;
-            margin: 0 5px;
-            cursor: pointer;
-            border: 2px solid transparent;
-            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary-color);
+            color: var(--secondary-color);
+            font-size: 16px;
         }
-        
-        .theme-btn.active {
-            border-color: #fff;
-            transform: scale(1.1);
-        }
-        
-        .theme-1 { background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d); }
-        .theme-2 { background: linear-gradient(135deg, #3a7bd5, #00d2ff); }
-        .theme-3 { background: linear-gradient(135deg, #834d9b, #d04ed6); }
-        .theme-4 { background: linear-gradient(135deg, #141E30, #243B55); }
         
         header {
             text-align: center;
             padding: 15px 0;
-            border-bottom: 2px solid #fdbb2d;
+            border-bottom: 2px solid var(--primary-color);
             margin-bottom: 15px;
             position: relative;
         }
@@ -77,8 +94,8 @@
         h1 {
             font-size: 1.5rem;
             margin-bottom: 8px;
-            color: #fdbb2d;
-            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+            color: var(--primary-color);
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
         }
         
         .match-info {
@@ -87,7 +104,7 @@
             text-align: center;
             margin: 15px 0;
             padding: 12px;
-            background: rgba(30, 30, 50, 0.8);
+            background: var(--card-bg);
             border-radius: 8px;
             font-size: 0.9rem;
         }
@@ -95,11 +112,19 @@
         .team {
             font-size: 1rem;
             font-weight: bold;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        
+        .team:hover {
+            background: rgba(255, 255, 255, 0.1);
         }
         
         .vs {
             font-size: 1.2rem;
-            color: #fdbb2d;
+            color: var(--primary-color);
             align-self: center;
             padding: 0 15px;
         }
@@ -114,12 +139,13 @@
             text-align: center;
             margin-bottom: 15px;
             font-size: 0.9rem;
-            color: #ccc;
+            color: var(--text-color);
+            opacity: 0.8;
         }
         
         .time-display {
             font-size: 1.1rem;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.2);
             padding: 8px 15px;
             border-radius: 8px;
             display: inline-block;
@@ -127,18 +153,18 @@
         }
         
         .stats-section {
-            background: rgba(30, 30, 50, 0.8);
+            background: var(--card-bg);
             padding: 15px;
             border-radius: 8px;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
             margin-bottom: 15px;
         }
         
         .stats-title {
-            color: #fdbb2d;
+            color: var(--primary-color);
             margin-bottom: 15px;
             text-align: center;
-            border-bottom: 1px solid #555;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
             padding-bottom: 8px;
             font-size: 1.2rem;
         }
@@ -152,19 +178,19 @@
         
         .stats-item {
             padding: 8px;
-            background: rgba(40, 40, 60, 0.6);
+            background: var(--stats-bg);
             border-radius: 5px;
             font-size: 0.9rem;
         }
         
         .stats-header {
             font-weight: bold;
-            color: #fdbb2d;
+            color: var(--primary-color);
         }
         
         .stats-editable {
             background: rgba(255, 255, 255, 0.1);
-            border: 1px dashed #fdbb2d;
+            border: 1px dashed var(--primary-color);
             cursor: pointer;
         }
         
@@ -176,7 +202,7 @@
         }
         
         .odds-card {
-            background: rgba(30, 30, 50, 0.8);
+            background: var(--card-bg);
             padding: 12px;
             border-radius: 8px;
             text-align: center;
@@ -184,7 +210,7 @@
         
         .odds-title {
             font-weight: bold;
-            color: #fdbb2d;
+            color: var(--primary-color);
             margin-bottom: 8px;
             font-size: 0.95rem;
         }
@@ -208,17 +234,17 @@
         }
         
         .input-section, .result-section {
-            background: rgba(30, 30, 50, 0.8);
+            background: var(--card-bg);
             padding: 15px;
             border-radius: 8px;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
         }
         
         h2 {
-            color: #fdbb2d;
+            color: var(--primary-color);
             margin-bottom: 15px;
             text-align: center;
-            border-bottom: 1px solid #555;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
             padding-bottom: 8px;
             font-size: 1.2rem;
         }
@@ -239,16 +265,16 @@
             padding: 8px;
             border: none;
             border-radius: 5px;
-            background: rgba(255, 255, 255, 0.9);
-            color: #333;
+            background: var(--input-bg);
+            color: var(--input-color);
             font-size: 0.9rem;
         }
         
         button {
             width: 100%;
             padding: 10px;
-            background: #fdbb2d;
-            color: #1a2a6c;
+            background: var(--primary-color);
+            color: var(--secondary-color);
             border: none;
             border-radius: 5px;
             font-size: 1rem;
@@ -259,7 +285,17 @@
         }
         
         button:hover {
-            background: #ffcc44;
+            opacity: 0.9;
+        }
+        
+        .clear-btn {
+            background: #ff6b6b;
+            color: white;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
         
         .result-card {
@@ -267,12 +303,12 @@
             padding: 12px;
             border-radius: 6px;
             margin-bottom: 12px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
         
         .result-title {
             font-weight: bold;
-            color: #fdbb2d;
+            color: var(--primary-color);
             margin-bottom: 8px;
             font-size: 0.95rem;
         }
@@ -281,7 +317,7 @@
             font-size: 1rem;
             text-align: center;
             padding: 8px;
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.2);
             border-radius: 5px;
             margin-top: 4px;
         }
@@ -302,9 +338,10 @@
             text-align: center;
             margin-top: 20px;
             padding-top: 15px;
-            border-top: 1px solid #555;
-            color: #ccc;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--text-color);
             font-size: 0.8rem;
+            opacity: 0.8;
         }
         
         .period-controls {
@@ -326,14 +363,14 @@
         }
         
         .period-btn.active {
-            background: #fdbb2d;
-            color: #1a2a6c;
+            background: var(--primary-color);
+            color: var(--secondary-color);
         }
         
         .tabs {
             display: flex;
             margin-bottom: 15px;
-            background: rgba(30, 30, 50, 0.8);
+            background: var(--card-bg);
             border-radius: 8px;
             overflow: hidden;
         }
@@ -342,14 +379,14 @@
             flex: 1;
             padding: 10px;
             text-align: center;
-            background: #252540;
+            background: rgba(37, 37, 64, 0.8);
             cursor: pointer;
             transition: background 0.3s;
         }
         
         .tab.active {
-            background: #fdbb2d;
-            color: #1a2a6c;
+            background: var(--primary-color);
+            color: var(--secondary-color);
             font-weight: bold;
         }
         
@@ -413,37 +450,52 @@
         
         /* Стиль для активного поля ввода */
         .input-active {
-            box-shadow: 0 0 0 2px #fdbb2d;
+            box-shadow: 0 0 0 2px var(--primary-color);
         }
         
         /* Стиль для редактируемой статистики */
         .edit-icon {
             margin-left: 5px;
-            color: #fdbb2d;
+            color: var(--primary-color);
             font-size: 0.8rem;
+        }
+        
+        body.light-theme .stats-editable {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        
+        body.light-theme .result-card {
+            background: rgba(255, 255, 255, 0.7);
+        }
+        
+        body.light-theme .tab {
+            background: rgba(255, 255, 255, 0.7);
+        }
+        
+        body.light-theme .period-btn {
+            background: #5c6bc0;
         }
     </style>
 </head>
-<body class="theme-1">
+<body>
     <div class="container">
-        <div class="theme-switcher">
-            <div class="theme-btn theme-1 active" data-theme="1"></div>
-            <div class="theme-btn theme-2" data-theme="2"></div>
-            <div class="theme-btn theme-3" data-theme="3"></div>
-            <div class="theme-btn theme-4" data-theme="4"></div>
+        <div class="theme-switcher" id="theme-switcher">
+            <div class="theme-icon">
+                <i class="fas fa-moon"></i>
+            </div>
         </div>
         
         <header>
-            <h1>Баскетбол. Чемпионат Европы</h1>
+            <h1>Баскетбол. Калькулятор исходов</h1>
             <div class="match-details">
                 Мужчины. Групповой этап. Группа A
             </div>
         </header>
         
         <div class="match-info">
-            <div class="team">Италия</div>
+            <div class="team" id="team-a">Италия</div>
             <div class="vs">VS</div>
-            <div class="team">Испания</div>
+            <div class="team" id="team-b">Испания</div>
             <div class="score">62</div>
             <div class="score">:</div>
             <div class="score">63</div>
@@ -463,8 +515,8 @@
             <div class="stats-title">Статистика матча <i class="fas fa-edit edit-icon" id="edit-stats"></i></div>
             <div class="stats-grid">
                 <div class="stats-item stats-header">Параметр</div>
-                <div class="stats-item stats-header">Италия</div>
-                <div class="stats-item stats-header">Испания</div>
+                <div class="stats-item stats-header" id="team-a-header">Италия</div>
+                <div class="stats-item stats-header" id="team-b-header">Испания</div>
                 
                 <div class="stats-item">Штрафные броски</div>
                 <div class="stats-item stats-editable" data-field="italy-free-throws">
@@ -502,11 +554,11 @@
         
         <div class="odds-section">
             <div class="odds-card">
-                <div class="odds-title">П1 (Италия)</div>
+                <div class="odds-title">П1 (<span id="team-a-short">ИТА</span>)</div>
                 <div class="odds-value">1.81</div>
             </div>
             <div class="odds-card">
-                <div class="odds-title">П2 (Испания)</div>
+                <div class="odds-title">П2 (<span id="team-b-short">ИСП</span>)</div>
                 <div class="odds-value">2.00</div>
             </div>
         </div>
@@ -556,8 +608,6 @@
                     <input type="text" id="avg-points" value="45" placeholder="40-50" inputmode="none" readonly>
                 </div>
                 
-                <button id="calculate-btn">Рассчитать</button>
-                
                 <div class="period-controls">
                     <button class="period-btn active" data-period="1">1-й</button>
                     <button class="period-btn" data-period="2">2-й</button>
@@ -600,6 +650,10 @@
                 </div>
             </div>
         </div>
+        
+        <button class="clear-btn" id="clear-btn">
+            <i class="fas fa-trash-alt"></i> Очистить все данные
+        </button>
         
         <footer>
             <p>Аналитический инструмент для баскетбольных ставок.</p>
@@ -653,6 +707,7 @@
         // Переменные для кастомной клавиатуры
         let activeInput = null;
         let activeStatField = null;
+        let activeTeamField = null;
         const keyboard = document.getElementById('custom-keyboard');
         
         // Обработчики для полей ввода - показ кастомной клавиатуры
@@ -665,6 +720,57 @@
                 // Добавляем класс для выделения активного поля
                 inputFields.forEach(field => field.classList.remove('input-active'));
                 this.classList.add('input-active');
+            });
+        });
+        
+        // Обработчики для редактирования названий команд
+        const teamFields = document.querySelectorAll('.team');
+        teamFields.forEach(field => {
+            field.addEventListener('click', function() {
+                activeTeamField = this;
+                const currentValue = this.textContent;
+                
+                // Создаем временное поле ввода
+                const tempInput = document.createElement('input');
+                tempInput.type = 'text';
+                tempInput.value = currentValue;
+                tempInput.style.width = '100%';
+                tempInput.style.textAlign = 'center';
+                tempInput.style.background = 'transparent';
+                tempInput.style.border = 'none';
+                tempInput.style.color = 'inherit';
+                tempInput.style.fontSize = 'inherit';
+                tempInput.style.fontWeight = 'inherit';
+                
+                // Заменяем содержимое на поле ввода
+                this.innerHTML = '';
+                this.appendChild(tempInput);
+                tempInput.focus();
+                
+                // Показываем кастомную клавиатуру
+                keyboard.style.display = 'block';
+                
+                // Обработчик завершения редактирования
+                const finishEdit = () => {
+                    this.textContent = tempInput.value;
+                    keyboard.style.display = 'none';
+                    
+                    // Обновляем заголовки в статистике
+                    if (this.id === 'team-a') {
+                        document.getElementById('team-a-header').textContent = tempInput.value;
+                        document.getElementById('team-a-short').textContent = tempInput.value.substring(0, 3).toUpperCase();
+                    } else {
+                        document.getElementById('team-b-header').textContent = tempInput.value;
+                        document.getElementById('team-b-short').textContent = tempInput.value.substring(0, 3).toUpperCase();
+                    }
+                    
+                    // Удаляем обработчики событий
+                    tempInput.removeEventListener('blur', finishEdit);
+                    document.getElementById('keyboard-close').removeEventListener('click', finishEdit);
+                };
+                
+                tempInput.addEventListener('blur', finishEdit);
+                document.getElementById('keyboard-close').addEventListener('click', finishEdit);
             });
         });
         
@@ -684,8 +790,8 @@
                 tempInput.style.textAlign = 'center';
                 tempInput.style.background = 'transparent';
                 tempInput.style.border = 'none';
-                tempInput.style.color = '#fff';
-                tempInput.style.fontSize = '0.9rem';
+                tempInput.style.color = 'inherit';
+                tempInput.style.fontSize = 'inherit';
                 
                 // Заменяем содержимое на поле ввода
                 this.innerHTML = '';
@@ -719,8 +825,14 @@
                 
                 if (activeInput) {
                     activeInput.value += key;
+                    calculatePredictions(); // Автоматический расчет
                 } else if (activeStatField) {
                     const inputField = activeStatField.querySelector('input');
+                    if (inputField) {
+                        inputField.value += key;
+                    }
+                } else if (activeTeamField) {
+                    const inputField = activeTeamField.querySelector('input');
                     if (inputField) {
                         inputField.value += key;
                     }
@@ -732,8 +844,14 @@
         document.getElementById('keyboard-backspace').addEventListener('click', function() {
             if (activeInput) {
                 activeInput.value = activeInput.value.slice(0, -1);
+                calculatePredictions(); // Автоматический расчет
             } else if (activeStatField) {
                 const inputField = activeStatField.querySelector('input');
+                if (inputField) {
+                    inputField.value = inputField.value.slice(0, -1);
+                }
+            } else if (activeTeamField) {
+                const inputField = activeTeamField.querySelector('input');
                 if (inputField) {
                     inputField.value = inputField.value.slice(0, -1);
                 }
@@ -750,13 +868,17 @@
             if (activeStatField) {
                 activeStatField = null;
             }
+            if (activeTeamField) {
+                activeTeamField = null;
+            }
         });
         
         // Закрытие клавиатуры при нажатии вне поля ввода
         document.addEventListener('click', function(e) {
             if (!e.target.closest('input[readonly]') && 
                 !e.target.closest('.custom-keyboard') && 
-                !e.target.closest('.stats-editable')) {
+                !e.target.closest('.stats-editable') &&
+                !e.target.closest('.team')) {
                 keyboard.style.display = 'none';
                 if (activeInput) {
                     activeInput.classList.remove('input-active');
@@ -765,17 +887,9 @@
                 if (activeStatField) {
                     activeStatField = null;
                 }
-            }
-        });
-        
-        // Обработчик кнопки расчета
-        document.getElementById('calculate-btn').addEventListener('click', function() {
-            calculatePredictions();
-            // Скрываем клавиатуру при расчете
-            keyboard.style.display = 'none';
-            if (activeInput) {
-                activeInput.classList.remove('input-active');
-                activeInput = null;
+                if (activeTeamField) {
+                    activeTeamField = null;
+                }
             }
         });
         
@@ -797,15 +911,41 @@
             });
         });
         
-        // Обработчики переключения темы
-        document.querySelectorAll('.theme-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const theme = this.getAttribute('data-theme');
-                document.body.className = 'theme-' + theme;
+        // Обработчик переключения темы
+        document.getElementById('theme-switcher').addEventListener('click', function() {
+            document.body.classList.toggle('light-theme');
+            const icon = this.querySelector('i');
+            if (document.body.classList.contains('light-theme')) {
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+            } else {
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+            }
+        });
+        
+        // Обработчик кнопки очистки
+        document.getElementById('clear-btn').addEventListener('click', function() {
+            if (confirm('Вы уверены, что хотите очистить все данные?')) {
+                // Очищаем поля ввода
+                document.getElementById('total-line').value = '';
+                document.getElementById('handicap-line').value = '';
+                document.getElementById('time-remaining').value = '';
+                document.getElementById('score-a').value = '';
+                document.getElementById('score-b').value = '';
+                document.getElementById('avg-points').value = '';
                 
-                document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-            });
+                // Сбрасываем период
+                document.getElementById('current-period').value = '3';
+                document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+                document.querySelector('[data-period="3"]').classList.add('active');
+                
+                // Сбрасываем результаты
+                calculatePredictions();
+                
+                // Показываем сообщение
+                alert('Все данные очищены!');
+            }
         });
         
         // Функция расчета прогнозов
@@ -937,6 +1077,13 @@
                 }
                 lastTouchEnd = now;
             }, false);
+            
+            // Автоматический расчет при изменении данных
+            document.querySelectorAll('input').forEach(input => {
+                input.addEventListener('input', calculatePredictions);
+            });
+            
+            document.getElementById('current-period').addEventListener('change', calculatePredictions);
         });
     </script>
 </body>
