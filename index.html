@@ -475,6 +475,21 @@
         body.light-theme .period-btn {
             background: #5c6bc0;
         }
+        
+        /* Стиль для поля ввода при редактировании статистики */
+        .stat-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: inherit;
+            font-size: inherit;
+            text-align: center;
+            caret-color: transparent;
+        }
+        
+        .stat-input:focus {
+            outline: none;
+        }
     </style>
 </head>
 <body>
@@ -713,7 +728,8 @@
         // Обработчики для полей ввода - показ кастомной клавиатуры
         const inputFields = document.querySelectorAll('input[readonly]');
         inputFields.forEach(input => {
-            input.addEventListener('focus', function() {
+            input.addEventListener('focus', function(e) {
+                e.preventDefault();
                 activeInput = this;
                 keyboard.style.display = 'block';
                 
@@ -726,7 +742,8 @@
         // Обработчики для редактирования названий команд
         const teamFields = document.querySelectorAll('.team');
         teamFields.forEach(field => {
-            field.addEventListener('click', function() {
+            field.addEventListener('click', function(e) {
+                e.preventDefault();
                 activeTeamField = this;
                 const currentValue = this.textContent;
                 
@@ -734,18 +751,12 @@
                 const tempInput = document.createElement('input');
                 tempInput.type = 'text';
                 tempInput.value = currentValue;
-                tempInput.style.width = '100%';
-                tempInput.style.textAlign = 'center';
-                tempInput.style.background = 'transparent';
-                tempInput.style.border = 'none';
-                tempInput.style.color = 'inherit';
-                tempInput.style.fontSize = 'inherit';
-                tempInput.style.fontWeight = 'inherit';
+                tempInput.classList.add('stat-input');
+                tempInput.setAttribute('readonly', 'readonly');
                 
                 // Заменяем содержимое на поле ввода
                 this.innerHTML = '';
                 this.appendChild(tempInput);
-                tempInput.focus();
                 
                 // Показываем кастомную клавиатуру
                 keyboard.style.display = 'block';
@@ -763,21 +774,23 @@
                         document.getElementById('team-b-header').textContent = tempInput.value;
                         document.getElementById('team-b-short').textContent = tempInput.value.substring(0, 3).toUpperCase();
                     }
-                    
-                    // Удаляем обработчики событий
-                    tempInput.removeEventListener('blur', finishEdit);
-                    document.getElementById('keyboard-close').removeEventListener('click', finishEdit);
                 };
                 
-                tempInput.addEventListener('blur', finishEdit);
-                document.getElementById('keyboard-close').addEventListener('click', finishEdit);
+                // Обработчик для кнопки "Готово"
+                const finishHandler = () => {
+                    finishEdit();
+                    document.getElementById('keyboard-close').removeEventListener('click', finishHandler);
+                };
+                
+                document.getElementById('keyboard-close').addEventListener('click', finishHandler);
             });
         });
         
         // Обработчики для редактируемой статистики
         const statFields = document.querySelectorAll('.stats-editable');
         statFields.forEach(field => {
-            field.addEventListener('click', function() {
+            field.addEventListener('click', function(e) {
+                e.preventDefault();
                 activeStatField = this;
                 const fieldId = this.getAttribute('data-field');
                 const currentValue = document.getElementById(fieldId).textContent;
@@ -786,17 +799,12 @@
                 const tempInput = document.createElement('input');
                 tempInput.type = 'text';
                 tempInput.value = currentValue;
-                tempInput.style.width = '100%';
-                tempInput.style.textAlign = 'center';
-                tempInput.style.background = 'transparent';
-                tempInput.style.border = 'none';
-                tempInput.style.color = 'inherit';
-                tempInput.style.fontSize = 'inherit';
+                tempInput.classList.add('stat-input');
+                tempInput.setAttribute('readonly', 'readonly');
                 
                 // Заменяем содержимое на поле ввода
                 this.innerHTML = '';
                 this.appendChild(tempInput);
-                tempInput.focus();
                 
                 // Показываем кастомную клавиатуру
                 keyboard.style.display = 'block';
@@ -807,14 +815,15 @@
                     this.innerHTML = tempInput.value;
                     keyboard.style.display = 'none';
                     calculatePredictions(); // Пересчитываем прогнозы
-                    
-                    // Удаляем обработчики событий
-                    tempInput.removeEventListener('blur', finishEdit);
-                    document.getElementById('keyboard-close').removeEventListener('click', finishEdit);
                 };
                 
-                tempInput.addEventListener('blur', finishEdit);
-                document.getElementById('keyboard-close').addEventListener('click', finishEdit);
+                // Обработчик для кнопки "Готово"
+                const finishHandler = () => {
+                    finishEdit();
+                    document.getElementById('keyboard-close').removeEventListener('click', finishHandler);
+                };
+                
+                document.getElementById('keyboard-close').addEventListener('click', finishHandler);
             });
         });
         
