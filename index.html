@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Анализатор баскетбольных ставок</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -22,6 +23,7 @@
             touch-action: manipulation;
             -webkit-user-select: none;
             user-select: none;
+            transition: background 0.5s ease;
         }
         
         .container {
@@ -33,11 +35,43 @@
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
         }
         
+        .theme-switcher {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 20px;
+            padding: 8px;
+            display: flex;
+            z-index: 100;
+        }
+        
+        .theme-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin: 0 5px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .theme-btn.active {
+            border-color: #fff;
+            transform: scale(1.1);
+        }
+        
+        .theme-1 { background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d); }
+        .theme-2 { background: linear-gradient(135deg, #3a7bd5, #00d2ff); }
+        .theme-3 { background: linear-gradient(135deg, #834d9b, #d04ed6); }
+        .theme-4 { background: linear-gradient(135deg, #141E30, #243B55); }
+        
         header {
             text-align: center;
             padding: 15px 0;
             border-bottom: 2px solid #fdbb2d;
             margin-bottom: 15px;
+            position: relative;
         }
         
         h1 {
@@ -126,6 +160,12 @@
         .stats-header {
             font-weight: bold;
             color: #fdbb2d;
+        }
+        
+        .stats-editable {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px dashed #fdbb2d;
+            cursor: pointer;
         }
         
         .odds-section {
@@ -375,10 +415,24 @@
         .input-active {
             box-shadow: 0 0 0 2px #fdbb2d;
         }
+        
+        /* Стиль для редактируемой статистики */
+        .edit-icon {
+            margin-left: 5px;
+            color: #fdbb2d;
+            font-size: 0.8rem;
+        }
     </style>
 </head>
-<body>
+<body class="theme-1">
     <div class="container">
+        <div class="theme-switcher">
+            <div class="theme-btn theme-1 active" data-theme="1"></div>
+            <div class="theme-btn theme-2" data-theme="2"></div>
+            <div class="theme-btn theme-3" data-theme="3"></div>
+            <div class="theme-btn theme-4" data-theme="4"></div>
+        </div>
+        
         <header>
             <h1>Баскетбол. Чемпионат Европы</h1>
             <div class="match-details">
@@ -406,27 +460,43 @@
         </div>
         
         <div class="stats-section">
-            <div class="stats-title">Статистика матча</div>
+            <div class="stats-title">Статистика матча <i class="fas fa-edit edit-icon" id="edit-stats"></i></div>
             <div class="stats-grid">
                 <div class="stats-item stats-header">Параметр</div>
                 <div class="stats-item stats-header">Италия</div>
                 <div class="stats-item stats-header">Испания</div>
                 
                 <div class="stats-item">Штрафные броски</div>
-                <div class="stats-item">9/13 (69%)</div>
-                <div class="stats-item">13/17 (76%)</div>
+                <div class="stats-item stats-editable" data-field="italy-free-throws">
+                    <span id="italy-free-throws">9/13 (69%)</span>
+                </div>
+                <div class="stats-item stats-editable" data-field="spain-free-throws">
+                    <span id="spain-free-throws">13/17 (76%)</span>
+                </div>
                 
                 <div class="stats-item">2-х очковые</div>
-                <div class="stats-item">16</div>
-                <div class="stats-item">10</div>
+                <div class="stats-item stats-editable" data-field="italy-two-pointers">
+                    <span id="italy-two-pointers">16</span>
+                </div>
+                <div class="stats-item stats-editable" data-field="spain-two-pointers">
+                    <span id="spain-two-pointers">10</span>
+                </div>
                 
                 <div class="stats-item">3-х очковые</div>
-                <div class="stats-item">7</div>
-                <div class="stats-item">10</div>
+                <div class="stats-item stats-editable" data-field="italy-three-pointers">
+                    <span id="italy-three-pointers">7</span>
+                </div>
+                <div class="stats-item stats-editable" data-field="spain-three-pointers">
+                    <span id="spain-three-pointers">10</span>
+                </div>
                 
                 <div class="stats-item">Фолы</div>
-                <div class="stats-item">26</div>
-                <div class="stats-item">17</div>
+                <div class="stats-item stats-editable" data-field="italy-fouls">
+                    <span id="italy-fouls">26</span>
+                </div>
+                <div class="stats-item stats-editable" data-field="spain-fouls">
+                    <span id="spain-fouls">17</span>
+                </div>
             </div>
         </div>
         
@@ -557,6 +627,12 @@
             <button class="keyboard-key" data-key=".">.</button>
             <button class="keyboard-key" data-key="-">-</button>
             <button class="keyboard-key" data-key=":">:</button>
+            <button class="keyboard-key" data-key="/">/</button>
+            <button class="keyboard-key" data-key="(">(</button>
+            <button class="keyboard-key" data-key=")">)</button>
+            <button class="keyboard-key" data-key="%">%</button>
+        </div>
+        <div class="keyboard-row">
             <button class="keyboard-key keyboard-backspace" id="keyboard-backspace">⌫</button>
             <button class="keyboard-key keyboard-close" id="keyboard-close">Готово</button>
         </div>
@@ -576,6 +652,7 @@
         
         // Переменные для кастомной клавиатуры
         let activeInput = null;
+        let activeStatField = null;
         const keyboard = document.getElementById('custom-keyboard');
         
         // Обработчики для полей ввода - показ кастомной клавиатуры
@@ -591,12 +668,62 @@
             });
         });
         
+        // Обработчики для редактируемой статистики
+        const statFields = document.querySelectorAll('.stats-editable');
+        statFields.forEach(field => {
+            field.addEventListener('click', function() {
+                activeStatField = this;
+                const fieldId = this.getAttribute('data-field');
+                const currentValue = document.getElementById(fieldId).textContent;
+                
+                // Создаем временное поле ввода
+                const tempInput = document.createElement('input');
+                tempInput.type = 'text';
+                tempInput.value = currentValue;
+                tempInput.style.width = '100%';
+                tempInput.style.textAlign = 'center';
+                tempInput.style.background = 'transparent';
+                tempInput.style.border = 'none';
+                tempInput.style.color = '#fff';
+                tempInput.style.fontSize = '0.9rem';
+                
+                // Заменяем содержимое на поле ввода
+                this.innerHTML = '';
+                this.appendChild(tempInput);
+                tempInput.focus();
+                
+                // Показываем кастомную клавиатуру
+                keyboard.style.display = 'block';
+                
+                // Обработчик завершения редактирования
+                const finishEdit = () => {
+                    document.getElementById(fieldId).textContent = tempInput.value;
+                    this.innerHTML = tempInput.value;
+                    keyboard.style.display = 'none';
+                    calculatePredictions(); // Пересчитываем прогнозы
+                    
+                    // Удаляем обработчики событий
+                    tempInput.removeEventListener('blur', finishEdit);
+                    document.getElementById('keyboard-close').removeEventListener('click', finishEdit);
+                };
+                
+                tempInput.addEventListener('blur', finishEdit);
+                document.getElementById('keyboard-close').addEventListener('click', finishEdit);
+            });
+        });
+        
         // Обработчики для кнопок клавиатуры
         document.querySelectorAll('.keyboard-key[data-key]').forEach(button => {
             button.addEventListener('click', function() {
+                const key = this.getAttribute('data-key');
+                
                 if (activeInput) {
-                    const key = this.getAttribute('data-key');
                     activeInput.value += key;
+                } else if (activeStatField) {
+                    const inputField = activeStatField.querySelector('input');
+                    if (inputField) {
+                        inputField.value += key;
+                    }
                 }
             });
         });
@@ -605,6 +732,11 @@
         document.getElementById('keyboard-backspace').addEventListener('click', function() {
             if (activeInput) {
                 activeInput.value = activeInput.value.slice(0, -1);
+            } else if (activeStatField) {
+                const inputField = activeStatField.querySelector('input');
+                if (inputField) {
+                    inputField.value = inputField.value.slice(0, -1);
+                }
             }
         });
         
@@ -615,15 +747,23 @@
                 activeInput.classList.remove('input-active');
                 activeInput = null;
             }
+            if (activeStatField) {
+                activeStatField = null;
+            }
         });
         
         // Закрытие клавиатуры при нажатии вне поля ввода
         document.addEventListener('click', function(e) {
-            if (!e.target.closest('input[readonly]') && !e.target.closest('.custom-keyboard')) {
+            if (!e.target.closest('input[readonly]') && 
+                !e.target.closest('.custom-keyboard') && 
+                !e.target.closest('.stats-editable')) {
                 keyboard.style.display = 'none';
                 if (activeInput) {
                     activeInput.classList.remove('input-active');
                     activeInput = null;
+                }
+                if (activeStatField) {
+                    activeStatField = null;
                 }
             }
         });
@@ -653,6 +793,17 @@
         document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', function() {
                 document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+        
+        // Обработчики переключения темы
+        document.querySelectorAll('.theme-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const theme = this.getAttribute('data-theme');
+                document.body.className = 'theme-' + theme;
+                
+                document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
                 this.classList.add('active');
             });
         });
