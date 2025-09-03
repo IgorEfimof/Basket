@@ -83,12 +83,69 @@
             font-size: 16px;
         }
         
+        .championship-selector {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            padding: 5px;
+            z-index: 100;
+            cursor: pointer;
+            width: 200px;
+        }
+        
+        .championship-button {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px;
+            background: var(--primary-color);
+            color: var(--secondary-color);
+            border-radius: 6px;
+            font-weight: bold;
+        }
+        
+        .championship-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            border-radius: 8px;
+            margin-top: 5px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .championship-dropdown.show {
+            display: block;
+        }
+        
+        .championship-option {
+            padding: 10px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .championship-option:hover {
+            background: rgba(253, 187, 45, 0.2);
+        }
+        
+        .championship-option.active {
+            background: var(--primary-color);
+            color: var(--secondary-color);
+            font-weight: bold;
+        }
+        
         header {
             text-align: center;
             padding: 15px 0;
             border-bottom: 2px solid var(--primary-color);
             margin-bottom: 15px;
             position: relative;
+            margin-top: 40px;
         }
         
         h1 {
@@ -151,6 +208,14 @@
             display: inline-block;
             margin-top: 8px;
             cursor: pointer;
+        }
+        
+        .championship-info {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            color: var(--primary-color);
+            font-weight: bold;
         }
         
         .stats-section {
@@ -251,6 +316,10 @@
         @media (max-width: 768px) {
             .main-content.active {
                 grid-template-columns: 1fr;
+            }
+            
+            .championship-selector {
+                width: 160px;
             }
         }
         
@@ -523,6 +592,12 @@
             margin-top: 5px;
             color: #fdbb2d;
         }
+        
+        .championship-format {
+            font-size: 0.8rem;
+            color: #ccc;
+            margin-top: 3px;
+        }
     </style>
 </head>
 <body>
@@ -533,12 +608,45 @@
             </div>
         </div>
         
+        <div class="championship-selector" id="championship-selector">
+            <div class="championship-button" id="championship-button">
+                <span id="selected-championship">NBA (4×12 мин)</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="championship-dropdown" id="championship-dropdown">
+                <div class="championship-option active" data-format="nba" data-periods="4" data-period-length="12" data-ot-length="5">
+                    NBA (4×12 мин)
+                    <div class="championship-format">4 периода по 12 минут</div>
+                </div>
+                <div class="championship-option" data-format="fibra" data-periods="4" data-period-length="10" data-ot-length="5">
+                    ФИБА (4×10 мин)
+                    <div class="championship-format">4 периода по 10 минут</div>
+                </div>
+                <div class="championship-option" data-format="three3-long" data-periods="4" data-period-length="12" data-ot-length="2">
+                    3×3 (4×12 мин)
+                    <div class="championship-format">4 периода по 12 минут</div>
+                </div>
+                <div class="championship-option" data-format="three3-short" data-periods="4" data-period-length="10" data-ot-length="2">
+                    3×3 (4×10 мин)
+                    <div class="championship-format">4 периода по 10 минут</div>
+                </div>
+                <div class="championship-option" data-format="four4" data-periods="2" data-period-length="10" data-ot-length="3">
+                    4×4 (2×10 мин)
+                    <div class="championship-format">2 тайма по 10 минут</div>
+                </div>
+            </div>
+        </div>
+        
         <header>
             <h1>Баскетбол. Калькулятор исходов</h1>
             <div class="match-details">
                 Мужчины. Групповой этап. Группа A
             </div>
         </header>
+        
+        <div class="championship-info" id="championship-info">
+            Формат: NBA - 4 периода по 12 минут, овертайм 5 минут
+        </div>
         
         <div class="match-info">
             <div class="team" id="team-a">Италия</div>
@@ -790,6 +898,18 @@
     </div>
 
     <script>
+        // Конфигурация чемпионатов
+        const championships = {
+            'nba': { name: 'NBA (4×12 мин)', periods: 4, periodLength: 12, otLength: 5, description: '4 периода по 12 минут, овертайм 5 минут' },
+            'fibra': { name: 'ФИБА (4×10 мин)', periods: 4, periodLength: 10, otLength: 5, description: '4 периода по 10 минут, овертайм 5 минут' },
+            'three3-long': { name: '3×3 (4×12 мин)', periods: 4, periodLength: 12, otLength: 2, description: '4 периода по 12 минут, овертайм 2 минуты' },
+            'three3-short': { name: '3×3 (4×10 мин)', periods: 4, periodLength: 10, otLength: 2, description: '4 периода по 10 минут, овертайм 2 минуты' },
+            'four4': { name: '4×4 (2×10 мин)', periods: 2, periodLength: 10, otLength: 3, description: '2 тайма по 10 минут, овертайм 3 минуты' }
+        };
+
+        // Текущий выбранный чемпионат
+        let currentChampionship = 'nba';
+
         // Обновление текущего времени
         function updateTime() {
             const now = new Date();
@@ -808,6 +928,41 @@
         let activeOddsField = null;
         let activeMatchTimeField = null;
         const keyboard = document.getElementById('custom-keyboard');
+        
+        // Обработчики для выбора чемпионата
+        document.getElementById('championship-button').addEventListener('click', function() {
+            document.getElementById('championship-dropdown').classList.toggle('show');
+        });
+        
+        document.querySelectorAll('.championship-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const format = this.dataset.format;
+                currentChampionship = format;
+                
+                // Обновляем отображение выбранного чемпионата
+                document.getElementById('selected-championship').textContent = championships[format].name;
+                document.getElementById('championship-info').textContent = `Формат: ${championships[format].description}`;
+                
+                // Убираем активный класс у всех опций и добавляем текущей
+                document.querySelectorAll('.championship-option').forEach(opt => {
+                    opt.classList.remove('active');
+                });
+                this.classList.add('active');
+                
+                // Скрываем dropdown
+                document.getElementById('championship-dropdown').classList.remove('show');
+                
+                // Пересчитываем прогнозы
+                calculatePredictions();
+            });
+        });
+        
+        // Закрываем dropdown при клике вне его
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.championship-selector')) {
+                document.getElementById('championship-dropdown').classList.remove('show');
+            }
+        });
         
         // Обработчики для полей ввода - показ кастомной клавиатуры
         const inputFields = document.querySelectorAll('input[readonly]');
@@ -855,11 +1010,11 @@
                 this.innerHTML = newValue + ' | Время: <span id="current-time">--:--:--</span>';
                 
                 // Парсим введенные данные
-                const match = newValue.match(/(\d+)-я четверть, (\d+):(\d+)/);
+                const match = newValue.match(/(\d+)-я (четверть|тайм), (\d+):(\d+)/);
                 if (match) {
                     const period = match[1];
-                    const minutes = match[2];
-                    const seconds = match[3];
+                    const minutes = match[3];
+                    const seconds = match[4];
                     
                     // Обновляем поля ввода
                     document.getElementById('current-period').value = period;
@@ -1124,25 +1279,6 @@
             });
         });
         
-        // Функция обновления отображения времени матча
-        function updateMatchTimeDisplay() {
-            const period = document.getElementById('current-period').value;
-            const timeRemaining = document.getElementById('time-remaining').value;
-            
-            let periodText;
-            switch(period) {
-                case '1': periodText = '1-я четверть'; break;
-                case '2': periodText = '2-я четверть'; break;
-                case '3': periodText = '3-я четверть'; break;
-                case '4': periodText = '4-я четверть'; break;
-                case 'ot': periodText = 'Овертайм'; break;
-                default: periodText = 'Неизвестно';
-            }
-            
-            document.getElementById('match-time-editable').innerHTML = `${periodText}, ${timeRemaining} | Время: <span id="current-time">--:--:--</span>`;
-            updateTime();
-        }
-        
         // Обработчики вкладок
         document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', function() {
@@ -1230,12 +1366,39 @@
             }
         });
         
+        // Функция обновления отображения времени матча
+        function updateMatchTimeDisplay() {
+            const period = document.getElementById('current-period').value;
+            const timeRemaining = document.getElementById('time-remaining').value;
+            const champ = championships[currentChampionship];
+            
+            let periodText;
+            if (champ.periods === 2) {
+                // Для формата с двумя таймами
+                periodText = period === '1' ? '1-й тайм' : 
+                            period === '2' ? '2-й тайм' : 
+                            period === 'ot' ? 'Овертайм' : `${period}-й овертайм`;
+            } else {
+                // Для формата с четырьмя периодами
+                periodText = period === '1' ? '1-я четверть' : 
+                            period === '2' ? '2-я четверть' : 
+                            period === '3' ? '3-я четверть' : 
+                            period === '4' ? '4-я четверть' : 
+                            period === 'ot' ? 'Овертайм' : `${period}-й овертайм`;
+            }
+            
+            document.getElementById('match-time-editable').innerHTML = `${periodText}, ${timeRemaining} | Время: <span id="current-time">--:--:--</span>`;
+            updateTime();
+        }
+        
         // Функция расчета прогнозов с учетом статистики и времени
         function calculatePredictions() {
+            const champ = championships[currentChampionship];
+            
             // Получаем значения из формы
             const totalLine = parseFloat(document.getElementById('total-line').value) || 0;
             const handicapLine = parseFloat(document.getElementById('handicap-line').value) || 0;
-            const currentPeriod = parseInt(document.getElementById('current-period').value);
+            const currentPeriod = document.getElementById('current-period').value;
             const timeRemaining = document.getElementById('time-remaining').value;
             const scoreA = parseInt(document.getElementById('score-a').value) || 0;
             const scoreB = parseInt(document.getElementById('score-b').value) || 0;
@@ -1271,15 +1434,16 @@
             const remainingSeconds = parseInt(timeParts[1]) || 0;
             const totalRemainingSeconds = remainingMinutes * 60 + remainingSeconds;
             
-            // Рассчитываем прошедшее время в зависимости от периода
+            // Рассчитываем прошедшее время в зависимости от периода и формата
             let elapsedMinutes;
-            switch(currentPeriod) {
-                case 1: elapsedMinutes = 12 - (totalRemainingSeconds / 60); break;
-                case 2: elapsedMinutes = 24 - (totalRemainingSeconds / 60); break;
-                case 3: elapsedMinutes = 36 - (totalRemainingSeconds / 60); break;
-                case 4: elapsedMinutes = 48 - (totalRemainingSeconds / 60); break;
-                case 5: elapsedMinutes = 53 - (totalRemainingSeconds / 60); break; // овертайм
-                default: elapsedMinutes = 36; // по умолчанию 3-й период
+            let isOvertime = currentPeriod === 'ot' || parseInt(currentPeriod) > champ.periods;
+            
+            if (!isOvertime) {
+                const periodNum = parseInt(currentPeriod);
+                elapsedMinutes = (champ.periodLength * (periodNum - 1)) + (champ.periodLength - (totalRemainingSeconds / 60));
+            } else {
+                const overtimeNum = currentPeriod === 'ot' ? 1 : parseInt(currentPeriod) - champ.periods;
+                elapsedMinutes = (champ.periodLength * champ.periods) + (champ.otLength * (overtimeNum - 1)) + (champ.otLength - (totalRemainingSeconds / 60));
             }
             
             // Рассчитываем текущий темп игры (очков в минуту)
@@ -1294,15 +1458,18 @@
             const efficiencyFactor = (italyEfficiency + spainEfficiency) / 2;
             
             // Учет времени матча для корректировки прогноза
-            const timeFactor = calculateTimeFactor(currentPeriod, totalRemainingSeconds);
+            const timeFactor = calculateTimeFactor(currentPeriod, totalRemainingSeconds, champ);
             const adjustedGamePace = totalPoints > 0 ? (parseFloat(gamePace) * efficiencyFactor * timeFactor).toFixed(2) : "0.00";
             
             // Прогнозируем общее количество очков в матче
             let totalProjected;
-            if (currentPeriod <= 4) {
-                totalProjected = Math.round(totalPoints + (parseFloat(adjustedGamePace) * (48 - elapsedMinutes)));
+            if (!isOvertime) {
+                const remainingTime = (champ.periodLength * champ.periods) - elapsedMinutes;
+                totalProjected = Math.round(totalPoints + (parseFloat(adjustedGamePace) * remainingTime));
             } else {
-                totalProjected = Math.round(totalPoints + (parseFloat(adjustedGamePace) * (5 - (totalRemainingSeconds / 60))));
+                const overtimeNum = currentPeriod === 'ot' ? 1 : parseInt(currentPeriod) - champ.periods;
+                const remainingTime = (champ.otLength * (overtimeNum)) - (champ.otLength - (totalRemainingSeconds / 60));
+                totalProjected = Math.round(totalPoints + (parseFloat(adjustedGamePace) * remainingTime));
             }
             
             // Корректируем прогноз на основе фолов (больше фолов -> больше штрафных)
@@ -1314,14 +1481,17 @@
             const efficiencyDiff = italyEfficiency - spainEfficiency;
             let projectedDiff;
             
-            if (currentPeriod <= 4) {
-                projectedDiff = Math.round(pointsDiff + (efficiencyDiff * (48 - elapsedMinutes) * timeFactor));
+            if (!isOvertime) {
+                const remainingTime = (champ.periodLength * champ.periods) - elapsedMinutes;
+                projectedDiff = Math.round(pointsDiff + (efficiencyDiff * remainingTime * timeFactor));
             } else {
-                projectedDiff = Math.round(pointsDiff + (efficiencyDiff * (5 - (totalRemainingSeconds / 60)) * timeFactor));
+                const overtimeNum = currentPeriod === 'ot' ? 1 : parseInt(currentPeriod) - champ.periods;
+                const remainingTime = (champ.otLength * (overtimeNum)) - (champ.otLength - (totalRemainingSeconds / 60));
+                projectedDiff = Math.round(pointsDiff + (efficiencyDiff * remainingTime * timeFactor));
             }
             
             // Рассчитываем вероятности победы
-            const winProbabilityA = calculateWinProbability(scoreA, scoreB, italyEfficiency, spainEfficiency, elapsedMinutes, currentPeriod, timeFactor);
+            const winProbabilityA = calculateWinProbability(scoreA, scoreB, italyEfficiency, spainEfficiency, elapsedMinutes, currentPeriod, timeFactor, champ);
             const winProbabilityB = 100 - winProbabilityA;
             
             // Рассчитываем наши коэффициенты на основе вероятностей
@@ -1362,7 +1532,7 @@
             }
             
             // Прогноз на конец периода
-            const periodProjection = Math.round((parseFloat(adjustedGamePace) * 12));
+            const periodProjection = Math.round((parseFloat(adjustedGamePace) * (isOvertime ? champ.otLength : champ.periodLength)));
             
             // Обновляем UI с результатами
             document.getElementById('predicted-total').textContent = totalProjected;
@@ -1426,22 +1596,36 @@
             document.getElementById('time-factor-display').textContent = `Коэффициент времени: ${timeFactor.toFixed(2)}`;
         }
         
-        // Функция расчета коэффициента времени
-        function calculateTimeFactor(period, remainingSeconds) {
-            // Базовый коэффициент в зависимости от четверти
+        // Функция расчета коэффициента времени с учетом формата чемпионата
+        function calculateTimeFactor(period, remainingSeconds, champ) {
+            // Базовый коэффициент в зависимости от периода
             let baseFactor;
-            switch(period) {
-                case 1: baseFactor = 1.1; break; // 1-я четверть - высокий темп
-                case 2: baseFactor = 1.0; break; // 2-я четверть - нормальный темп
-                case 3: baseFactor = 0.95; break; // 3-я четверть - немного замедленный
-                case 4: baseFactor = 0.9; break; // 4-я четверть - замедленный темп
-                case 5: baseFactor = 1.0; break; // Овертайм - нормальный темп
-                default: baseFactor = 1.0;
+            const periodNum = period === 'ot' ? champ.periods + 1 : parseInt(period);
+            
+            if (periodNum <= champ.periods) {
+                // Основные периоды
+                if (champ.periods === 2) {
+                    // Для формата с двумя таймами
+                    baseFactor = periodNum === 1 ? 1.1 : 0.9;
+                } else {
+                    // Для формата с четырьмя периодами
+                    switch(periodNum) {
+                        case 1: baseFactor = 1.1; break;
+                        case 2: baseFactor = 1.0; break;
+                        case 3: baseFactor = 0.95; break;
+                        case 4: baseFactor = 0.9; break;
+                        default: baseFactor = 1.0;
+                    }
+                }
+            } else {
+                // Овертайм
+                baseFactor = 1.0;
             }
             
             // Корректировка на основе оставшегося времени
-            // В конце четверти темп обычно замедляется
-            const timeFactor = 1 - (remainingSeconds / (12 * 60)) * 0.2;
+            // В конце периода темп обычно замедляется
+            const periodLength = periodNum <= champ.periods ? champ.periodLength : champ.otLength;
+            const timeFactor = 1 - (remainingSeconds / (periodLength * 60)) * 0.2;
             
             return baseFactor * timeFactor;
         }
@@ -1467,8 +1651,8 @@
             return 0.8 + (shootingEfficiency * 0.5 + freeThrowPercentage * 0.3 + reboundEfficiency * 0.1 + turnoverEfficiency * 0.1);
         }
         
-        // Функция расчета вероятности победы
-        function calculateWinProbability(scoreA, scoreB, efficiencyA, efficiencyB, elapsedMinutes, currentPeriod, timeFactor) {
+        // Функция расчета вероятности победы с учетом формата чемпионата
+        function calculateWinProbability(scoreA, scoreB, efficiencyA, efficiencyB, elapsedMinutes, currentPeriod, timeFactor, champ) {
             const scoreDiff = scoreA - scoreB;
             const efficiencyDiff = efficiencyA - efficiencyB;
             
@@ -1480,10 +1664,16 @@
             
             // Корректировка на основе оставшегося времени
             let timeCorrection;
-            if (currentPeriod <= 4) {
-                timeCorrection = (48 - elapsedMinutes) / 48;
+            const periodNum = currentPeriod === 'ot' ? champ.periods + 1 : parseInt(currentPeriod);
+            const isOvertime = periodNum > champ.periods;
+            
+            if (!isOvertime) {
+                const remainingTime = (champ.periodLength * champ.periods) - elapsedMinutes;
+                timeCorrection = remainingTime / (champ.periodLength * champ.periods);
             } else {
-                timeCorrection = (5 - (elapsedMinutes - 48)) / 5;
+                const overtimeNum = periodNum - champ.periods;
+                const remainingTime = (champ.otLength * overtimeNum) - (elapsedMinutes - (champ.periodLength * champ.periods));
+                timeCorrection = remainingTime / (champ.otLength * overtimeNum);
             }
             
             baseProbability = 50 + (baseProbability - 50) * timeCorrection;
