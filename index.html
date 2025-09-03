@@ -3,10 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon196.png">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="BASKET">
-    <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Баскетбол. Калькулятор исходов</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -154,6 +150,7 @@
             border-radius: 8px;
             display: inline-block;
             margin-top: 8px;
+            cursor: pointer;
         }
         
         .stats-section {
@@ -520,6 +517,12 @@
             color: #4caf50;
             margin-top: 5px;
         }
+        
+        .time-factor-display {
+            font-size: 0.9rem;
+            margin-top: 5px;
+            color: #fdbb2d;
+        }
     </style>
 </head>
 <body>
@@ -546,7 +549,7 @@
             <div class="score" id="score-b-display">63</div>
         </div>
         
-        <div class="time-display">
+        <div class="time-display" id="match-time-editable">
             4-я четверть, 09:29 | Время: <span id="current-time">--:--:--</span>
         </div>
         
@@ -736,6 +739,12 @@
                     <div class="result-title">Рекомендуемая ставка:</div>
                     <div class="result-value" id="recommended-bet">--</div>
                 </div>
+                
+                <div class="result-card">
+                    <div class="result-title">Влияние времени на прогноз:</div>
+                    <div class="result-value" id="time-impact">--</div>
+                    <div class="time-factor-display" id="time-factor-display">--</div>
+                </div>
             </div>
         </div>
         
@@ -797,6 +806,7 @@
         let activeStatField = null;
         let activeTeamField = null;
         let activeOddsField = null;
+        let activeMatchTimeField = null;
         const keyboard = document.getElementById('custom-keyboard');
         
         // Обработчики для полей ввода - показ кастомной клавиатуры
@@ -811,6 +821,73 @@
                 inputFields.forEach(field => field.classList.remove('input-active'));
                 this.classList.add('input-active');
             });
+        });
+        
+        // Обработчик для редактирования времени матча
+        document.getElementById('match-time-editable').addEventListener('click', function(e) {
+            e.preventDefault();
+            activeMatchTimeField = this;
+            const currentValue = this.textContent;
+            
+            // Создаем временное поле ввода
+            const tempInput = document.createElement('input');
+            tempInput.type = 'text';
+            tempInput.value = currentValue.replace(' | Время: --:--:--', '');
+            tempInput.classList.add('stat-input');
+            tempInput.setAttribute('readonly', 'readonly');
+            tempInput.style.fontSize = '1.1rem';
+            tempInput.style.textAlign = 'center';
+            tempInput.style.width = '100%';
+            tempInput.style.background = 'transparent';
+            tempInput.style.color = 'inherit';
+            tempInput.style.border = '1px dashed var(--primary-color)';
+            
+            // Заменяем содержимое на поле ввода
+            this.innerHTML = '';
+            this.appendChild(tempInput);
+            
+            // Показываем кастомную клавиатуру
+            keyboard.style.display = 'block';
+            
+            // Обработчик завершения редактирования
+            const finishEdit = () => {
+                const newValue = tempInput.value;
+                this.innerHTML = newValue + ' | Время: <span id="current-time">--:--:--</span>';
+                
+                // Парсим введенные данные
+                const match = newValue.match(/(\d+)-я четверть, (\d+):(\d+)/);
+                if (match) {
+                    const period = match[1];
+                    const minutes = match[2];
+                    const seconds = match[3];
+                    
+                    // Обновляем поля ввода
+                    document.getElementById('current-period').value = period;
+                    document.getElementById('time-remaining').value = `${minutes}:${seconds}`;
+                    
+                    // Активируем соответствующую кнопку периода
+                    document.querySelectorAll('.period-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                        if (btn.dataset.period === period) {
+                            btn.classList.add('active');
+                        }
+                    });
+                    
+                    // Пересчитываем прогнозы
+                    calculatePredictions();
+                }
+                
+                keyboard.style.display = 'none';
+                updateTime(); // Обновляем время
+            };
+            
+            // Обработчик для кнопки "Готово"
+            const finishHandler = () => {
+                finishEdit();
+                document.getElementById('keyboard-close').removeEventListener('click', finishHandler);
+            };
+            
+            document.getElementById('keyboard-close').addEventListener('click', finishHandler);
         });
         
         // Автоматическое обновление счета при изменении очков
@@ -978,6 +1055,11 @@
                     if (inputField) {
                         inputField.value += key;
                     }
+                } else if (activeMatchTimeField) {
+                    const inputField = activeMatchTimeField.querySelector('input');
+                    if (inputField) {
+                        inputField.value += key;
+                    }
                 }
             });
         });
@@ -1002,6 +1084,11 @@
                 if (inputField) {
                     inputField.value = inputField.value.slice(0, -1);
                 }
+            } else if (activeMatchTimeField) {
+                const inputField = activeMatchTimeField.querySelector('input');
+                if (inputField) {
+                    inputField.value = inputField.value.slice(0, -1);
+                }
             }
         });
         
@@ -1021,6 +1108,9 @@
             if (activeOddsField) {
                 activeOddsField = null;
             }
+            if (activeMatchTimeField) {
+                activeMatchTimeField = null;
+            }
         });
         
         // Обработчики кнопок периодов
@@ -1029,9 +1119,29 @@
                 document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
                 this.classList.add('active');
                 document.getElementById('current-period').value = this.dataset.period;
+                updateMatchTimeDisplay();
                 calculatePredictions();
             });
         });
+        
+        // Функция обновления отображения времени матча
+        function updateMatchTimeDisplay() {
+            const period = document.getElementById('current-period').value;
+            const timeRemaining = document.getElementById('time-remaining').value;
+            
+            let periodText;
+            switch(period) {
+                case '1': periodText = '1-я четверть'; break;
+                case '2': periodText = '2-я четверть'; break;
+                case '3': periodText = '3-я четверть'; break;
+                case '4': periodText = '4-я четверть'; break;
+                case 'ot': periodText = 'Овертайм'; break;
+                default: periodText = 'Неизвестно';
+            }
+            
+            document.getElementById('match-time-editable').innerHTML = `${periodText}, ${timeRemaining} | Время: <span id="current-time">--:--:--</span>`;
+            updateTime();
+        }
         
         // Обработчики вкладок
         document.querySelectorAll('.tab').forEach(tab => {
@@ -1106,6 +1216,9 @@
                 document.getElementById('odds-total-over').textContent = '1.00';
                 document.getElementById('odds-total-under').textContent = '1.00';
                 
+                // Обновляем отображение времени
+                updateMatchTimeDisplay();
+                
                 // Скрываем клавиатуру
                 keyboard.style.display = 'none';
                 
@@ -1117,7 +1230,7 @@
             }
         });
         
-        // Функция расчета прогнозов с учетом статистики
+        // Функция расчета прогнозов с учетом статистики и времени
         function calculatePredictions() {
             // Получаем значения из формы
             const totalLine = parseFloat(document.getElementById('total-line').value) || 0;
@@ -1179,7 +1292,10 @@
             
             // Корректируем темп игры на основе эффективности
             const efficiencyFactor = (italyEfficiency + spainEfficiency) / 2;
-            const adjustedGamePace = totalPoints > 0 ? (parseFloat(gamePace) * efficiencyFactor).toFixed(2) : "0.00";
+            
+            // Учет времени матча для корректировки прогноза
+            const timeFactor = calculateTimeFactor(currentPeriod, totalRemainingSeconds);
+            const adjustedGamePace = totalPoints > 0 ? (parseFloat(gamePace) * efficiencyFactor * timeFactor).toFixed(2) : "0.00";
             
             // Прогнозируем общее количество очков в матче
             let totalProjected;
@@ -1199,13 +1315,13 @@
             let projectedDiff;
             
             if (currentPeriod <= 4) {
-                projectedDiff = Math.round(pointsDiff + (efficiencyDiff * (48 - elapsedMinutes)));
+                projectedDiff = Math.round(pointsDiff + (efficiencyDiff * (48 - elapsedMinutes) * timeFactor));
             } else {
-                projectedDiff = Math.round(pointsDiff + (efficiencyDiff * (5 - (totalRemainingSeconds / 60))));
+                projectedDiff = Math.round(pointsDiff + (efficiencyDiff * (5 - (totalRemainingSeconds / 60)) * timeFactor));
             }
             
             // Рассчитываем вероятности победы
-            const winProbabilityA = calculateWinProbability(scoreA, scoreB, italyEfficiency, spainEfficiency, elapsedMinutes, currentPeriod);
+            const winProbabilityA = calculateWinProbability(scoreA, scoreB, italyEfficiency, spainEfficiency, elapsedMinutes, currentPeriod, timeFactor);
             const winProbabilityB = 100 - winProbabilityA;
             
             // Рассчитываем наши коэффициенты на основе вероятностей
@@ -1293,6 +1409,41 @@
             
             document.getElementById('calculated-total-over').textContent = totalOverProbability > 0 ? (100 / totalOverProbability).toFixed(2) : "0.00";
             document.getElementById('calculated-total-under').textContent = totalUnderProbability > 0 ? (100 / totalUnderProbability).toFixed(2) : "0.00";
+            
+            // Отображаем влияние времени на прогноз
+            let timeImpactText = "";
+            if (timeFactor > 1.1) {
+                timeImpactText = "Высокий темп игры - больше очков";
+            } else if (timeFactor > 1.0) {
+                timeImpactText = "Повышенный темп игры";
+            } else if (timeFactor > 0.9) {
+                timeImpactText = "Нормальный темп игры";
+            } else {
+                timeImpactText = "Замедленный темп игры - меньше очков";
+            }
+            
+            document.getElementById('time-impact').textContent = timeImpactText;
+            document.getElementById('time-factor-display').textContent = `Коэффициент времени: ${timeFactor.toFixed(2)}`;
+        }
+        
+        // Функция расчета коэффициента времени
+        function calculateTimeFactor(period, remainingSeconds) {
+            // Базовый коэффициент в зависимости от четверти
+            let baseFactor;
+            switch(period) {
+                case 1: baseFactor = 1.1; break; // 1-я четверть - высокий темп
+                case 2: baseFactor = 1.0; break; // 2-я четверть - нормальный темп
+                case 3: baseFactor = 0.95; break; // 3-я четверть - немного замедленный
+                case 4: baseFactor = 0.9; break; // 4-я четверть - замедленный темп
+                case 5: baseFactor = 1.0; break; // Овертайм - нормальный темп
+                default: baseFactor = 1.0;
+            }
+            
+            // Корректировка на основе оставшегося времени
+            // В конце четверти темп обычно замедляется
+            const timeFactor = 1 - (remainingSeconds / (12 * 60)) * 0.2;
+            
+            return baseFactor * timeFactor;
         }
         
         // Функция расчета эффективности команды
@@ -1317,7 +1468,7 @@
         }
         
         // Функция расчета вероятности победы
-        function calculateWinProbability(scoreA, scoreB, efficiencyA, efficiencyB, elapsedMinutes, currentPeriod) {
+        function calculateWinProbability(scoreA, scoreB, efficiencyA, efficiencyB, elapsedMinutes, currentPeriod, timeFactor) {
             const scoreDiff = scoreA - scoreB;
             const efficiencyDiff = efficiencyA - efficiencyB;
             
@@ -1328,14 +1479,17 @@
             baseProbability += efficiencyDiff * 10;
             
             // Корректировка на основе оставшегося времени
-            let timeFactor;
+            let timeCorrection;
             if (currentPeriod <= 4) {
-                timeFactor = (48 - elapsedMinutes) / 48;
+                timeCorrection = (48 - elapsedMinutes) / 48;
             } else {
-                timeFactor = (5 - (elapsedMinutes - 48)) / 5;
+                timeCorrection = (5 - (elapsedMinutes - 48)) / 5;
             }
             
-            baseProbability = 50 + (baseProbability - 50) * timeFactor;
+            baseProbability = 50 + (baseProbability - 50) * timeCorrection;
+            
+            // Корректировка на основе темпа игры
+            baseProbability *= timeFactor;
             
             // Ограничиваем вероятность в диапазоне 1-99%
             return Math.max(1, Math.min(99, baseProbability));
@@ -1359,6 +1513,7 @@
         
         // Инициализация расчетов при загрузке
         window.addEventListener('load', function() {
+            updateMatchTimeDisplay();
             calculatePredictions();
             
             // На iOS устройствах отключаем стандартную клавиатуру
@@ -1395,7 +1550,15 @@
                 input.addEventListener('input', calculatePredictions);
             });
             
-            document.getElementById('current-period').addEventListener('change', calculatePredictions);
+            document.getElementById('current-period').addEventListener('change', function() {
+                updateMatchTimeDisplay();
+                calculatePredictions();
+            });
+            
+            document.getElementById('time-remaining').addEventListener('input', function() {
+                updateMatchTimeDisplay();
+                calculatePredictions();
+            });
         });
     </script>
 </body>
