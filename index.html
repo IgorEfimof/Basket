@@ -158,6 +158,11 @@
             border-radius: 8px;
             box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
             margin-bottom: 15px;
+            display: none;
+        }
+        
+        .stats-section.active {
+            display: block;
         }
         
         .stats-title {
@@ -199,6 +204,11 @@
             grid-template-columns: 1fr 1fr;
             gap: 10px;
             margin-bottom: 15px;
+            display: none;
+        }
+        
+        .odds-section.active {
+            display: grid;
         }
         
         .odds-card {
@@ -218,6 +228,11 @@
         .odds-value {
             font-size: 1.2rem;
             font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .odds-editable {
+            border-bottom: 1px dashed var(--primary-color);
         }
         
         .main-content {
@@ -225,10 +240,15 @@
             grid-template-columns: 1fr 1fr;
             gap: 15px;
             margin-bottom: 20px;
+            display: none;
+        }
+        
+        .main-content.active {
+            display: grid;
         }
         
         @media (max-width: 768px) {
-            .main-content {
+            .main-content.active {
                 grid-template-columns: 1fr;
             }
         }
@@ -490,6 +510,12 @@
         .stat-input:focus {
             outline: none;
         }
+        
+        .calculated-odds {
+            font-size: 0.9rem;
+            color: #4caf50;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -521,12 +547,12 @@
         </div>
         
         <div class="tabs">
-            <div class="tab active">Статистика</div>
-            <div class="tab">Основные</div>
-            <div class="tab">Анализ</div>
+            <div class="tab active" data-tab="stats">Статистика</div>
+            <div class="tab" data-tab="main">Основные</div>
+            <div class="tab" data-tab="analysis">Анализ</div>
         </div>
         
-        <div class="stats-section">
+        <div class="stats-section active" id="stats-tab">
             <div class="stats-title">Статистика матча <i class="fas fa-edit edit-icon" id="edit-stats"></i></div>
             <div class="stats-grid">
                 <div class="stats-item stats-header">Параметр</div>
@@ -564,21 +590,49 @@
                 <div class="stats-item stats-editable" data-field="spain-fouls">
                     <span id="spain-fouls">17</span>
                 </div>
+                
+                <div class="stats-item">Подборы</div>
+                <div class="stats-item stats-editable" data-field="italy-rebounds">
+                    <span id="italy-rebounds">32</span>
+                </div>
+                <div class="stats-item stats-editable" data-field="spain-rebounds">
+                    <span id="spain-rebounds">28</span>
+                </div>
+                
+                <div class="stats-item">Потери</div>
+                <div class="stats-item stats-editable" data-field="italy-turnovers">
+                    <span id="italy-turnovers">12</span>
+                </div>
+                <div class="stats-item stats-editable" data-field="spain-turnovers">
+                    <span id="spain-turnovers">10</span>
+                </div>
             </div>
         </div>
         
-        <div class="odds-section">
+        <div class="odds-section" id="main-tab">
             <div class="odds-card">
                 <div class="odds-title">П1 (<span id="team-a-short">ИТА</span>)</div>
-                <div class="odds-value">1.81</div>
+                <div class="odds-value odds-editable" id="odds-p1">1.81</div>
+                <div class="calculated-odds">Наш расчет: <span id="calculated-p1">1.92</span></div>
             </div>
             <div class="odds-card">
                 <div class="odds-title">П2 (<span id="team-b-short">ИСП</span>)</div>
-                <div class="odds-value">2.00</div>
+                <div class="odds-value odds-editable" id="odds-p2">2.00</div>
+                <div class="calculated-odds">Наш расчет: <span id="calculated-p2">1.85</span></div>
+            </div>
+            <div class="odds-card">
+                <div class="odds-title">Тотал больше</div>
+                <div class="odds-value odds-editable" id="odds-total-over">1.95</div>
+                <div class="calculated-odds">Наш расчет: <span id="calculated-total-over">1.87</span></div>
+            </div>
+            <div class="odds-card">
+                <div class="odds-title">Тотал меньше</div>
+                <div class="odds-value odds-editable" id="odds-total-under">1.85</div>
+                <div class="calculated-odds">Наш расчет: <span id="calculated-total-under">1.93</span></div>
             </div>
         </div>
         
-        <div class="main-content">
+        <div class="main-content" id="analysis-tab">
             <div class="input-section">
                 <h2>Ввод данных</h2>
                 
@@ -663,6 +717,21 @@
                     <div class="result-title">Прогноз на конец периода:</div>
                     <div class="result-value" id="period-prediction">--</div>
                 </div>
+                
+                <div class="result-card">
+                    <div class="result-title">Вероятность победы команды А:</div>
+                    <div class="result-value" id="win-probability-a">--</div>
+                </div>
+                
+                <div class="result-card">
+                    <div class="result-title">Вероятность победы команды Б:</div>
+                    <div class="result-value" id="win-probability-b">--</div>
+                </div>
+                
+                <div class="result-card">
+                    <div class="result-title">Рекомендуемая ставка:</div>
+                    <div class="result-value" id="recommended-bet">--</div>
+                </div>
             </div>
         </div>
         
@@ -723,6 +792,7 @@
         let activeInput = null;
         let activeStatField = null;
         let activeTeamField = null;
+        let activeOddsField = null;
         const keyboard = document.getElementById('custom-keyboard');
         
         // Обработчики для полей ввода - показ кастомной клавиатуры
@@ -827,6 +897,49 @@
             });
         });
         
+        // Обработчики для редактирования коэффициентов
+        const oddsFields = document.querySelectorAll('.odds-editable');
+        oddsFields.forEach(field => {
+            field.addEventListener('click', function(e) {
+                e.preventDefault();
+                activeOddsField = this;
+                const currentValue = this.textContent;
+                
+                // Создаем временное поле ввода
+                const tempInput = document.createElement('input');
+                tempInput.type = 'text';
+                tempInput.value = currentValue;
+                tempInput.classList.add('stat-input');
+                tempInput.setAttribute('readonly', 'readonly');
+                tempInput.style.fontSize = '1.2rem';
+                tempInput.style.fontWeight = 'bold';
+                tempInput.style.textAlign = 'center';
+                tempInput.style.width = '100%';
+                
+                // Заменяем содержимое на поле ввода
+                this.innerHTML = '';
+                this.appendChild(tempInput);
+                
+                // Показываем кастомную клавиатуру
+                keyboard.style.display = 'block';
+                
+                // Обработчик завершения редактирования
+                const finishEdit = () => {
+                    this.textContent = tempInput.value;
+                    keyboard.style.display = 'none';
+                    calculatePredictions(); // Пересчитываем прогнозы
+                };
+                
+                // Обработчик для кнопки "Готово"
+                const finishHandler = () => {
+                    finishEdit();
+                    document.getElementById('keyboard-close').removeEventListener('click', finishHandler);
+                };
+                
+                document.getElementById('keyboard-close').addEventListener('click', finishHandler);
+            });
+        });
+        
         // Обработчики для кнопок клавиатуры
         document.querySelectorAll('.keyboard-key[data-key]').forEach(button => {
             button.addEventListener('click', function() {
@@ -842,6 +955,11 @@
                     }
                 } else if (activeTeamField) {
                     const inputField = activeTeamField.querySelector('input');
+                    if (inputField) {
+                        inputField.value += key;
+                    }
+                } else if (activeOddsField) {
+                    const inputField = activeOddsField.querySelector('input');
                     if (inputField) {
                         inputField.value += key;
                     }
@@ -864,6 +982,11 @@
                 if (inputField) {
                     inputField.value = inputField.value.slice(0, -1);
                 }
+            } else if (activeOddsField) {
+                const inputField = activeOddsField.querySelector('input');
+                if (inputField) {
+                    inputField.value = inputField.value.slice(0, -1);
+                }
             }
         });
         
@@ -880,25 +1003,8 @@
             if (activeTeamField) {
                 activeTeamField = null;
             }
-        });
-        
-        // Закрытие клавиатуры при нажатии вне поля ввода
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('input[readonly]') && 
-                !e.target.closest('.custom-keyboard') && 
-                !e.target.closest('.stats-editable') &&
-                !e.target.closest('.team')) {
-                keyboard.style.display = 'none';
-                if (activeInput) {
-                    activeInput.classList.remove('input-active');
-                    activeInput = null;
-                }
-                if (activeStatField) {
-                    activeStatField = null;
-                }
-                if (activeTeamField) {
-                    activeTeamField = null;
-                }
+            if (activeOddsField) {
+                activeOddsField = null;
             }
         });
         
@@ -915,8 +1021,20 @@
         // Обработчики вкладок
         document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', function() {
+                const tabId = this.dataset.tab;
+                
+                // Убираем активный класс у всех вкладок
                 document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                // Добавляем активный класс текущей вкладке
                 this.classList.add('active');
+                
+                // Скрываем все разделы
+                document.getElementById('stats-tab').classList.remove('active');
+                document.getElementById('main-tab').classList.remove('active');
+                document.getElementById('analysis-tab').classList.remove('active');
+                
+                // Показываем нужный раздел
+                document.getElementById(`${tabId}-tab`).classList.add('active');
             });
         });
         
@@ -949,6 +1067,26 @@
                 document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
                 document.querySelector('[data-period="3"]').classList.add('active');
                 
+                // Сбрасываем статистику
+                document.getElementById('italy-free-throws').textContent = '9/13 (69%)';
+                document.getElementById('spain-free-throws').textContent = '13/17 (76%)';
+                document.getElementById('italy-two-pointers').textContent = '16';
+                document.getElementById('spain-two-pointers').textContent = '10';
+                document.getElementById('italy-three-pointers').textContent = '7';
+                document.getElementById('spain-three-pointers').textContent = '10';
+                document.getElementById('italy-fouls').textContent = '26';
+                document.getElementById('spain-fouls').textContent = '17';
+                document.getElementById('italy-rebounds').textContent = '32';
+                document.getElementById('spain-rebounds').textContent = '28';
+                document.getElementById('italy-turnovers').textContent = '12';
+                document.getElementById('spain-turnovers').textContent = '10';
+                
+                // Сбрасываем коэффициенты
+                document.getElementById('odds-p1').textContent = '1.81';
+                document.getElementById('odds-p2').textContent = '2.00';
+                document.getElementById('odds-total-over').textContent = '1.95';
+                document.getElementById('odds-total-under').textContent = '1.85';
+                
                 // Сбрасываем результаты
                 calculatePredictions();
                 
@@ -957,7 +1095,7 @@
             }
         });
         
-        // Функция расчета прогнозов
+        // Функция расчета прогнозов с учетом статистики
         function calculatePredictions() {
             // Получаем значения из формы
             const totalLine = parseFloat(document.getElementById('total-line').value) || 0;
@@ -967,6 +1105,26 @@
             const scoreA = parseInt(document.getElementById('score-a').value) || 0;
             const scoreB = parseInt(document.getElementById('score-b').value) || 0;
             const avgPoints = parseInt(document.getElementById('avg-points').value) || 45;
+            
+            // Получаем значения статистики
+            const italyFreeThrows = document.getElementById('italy-free-throws').textContent;
+            const spainFreeThrows = document.getElementById('spain-free-throws').textContent;
+            const italyTwoPointers = parseInt(document.getElementById('italy-two-pointers').textContent) || 0;
+            const spainTwoPointers = parseInt(document.getElementById('spain-two-pointers').textContent) || 0;
+            const italyThreePointers = parseInt(document.getElementById('italy-three-pointers').textContent) || 0;
+            const spainThreePointers = parseInt(document.getElementById('spain-three-pointers').textContent) || 0;
+            const italyFouls = parseInt(document.getElementById('italy-fouls').textContent) || 0;
+            const spainFouls = parseInt(document.getElementById('spain-fouls').textContent) || 0;
+            const italyRebounds = parseInt(document.getElementById('italy-rebounds').textContent) || 0;
+            const spainRebounds = parseInt(document.getElementById('spain-rebounds').textContent) || 0;
+            const italyTurnovers = parseInt(document.getElementById('italy-turnovers').textContent) || 0;
+            const spainTurnovers = parseInt(document.getElementById('spain-turnovers').textContent) || 0;
+            
+            // Получаем коэффициенты букмекеров
+            const oddsP1 = parseFloat(document.getElementById('odds-p1').textContent) || 0;
+            const oddsP2 = parseFloat(document.getElementById('odds-p2').textContent) || 0;
+            const oddsTotalOver = parseFloat(document.getElementById('odds-total-over').textContent) || 0;
+            const oddsTotalUnder = parseFloat(document.getElementById('odds-total-under').textContent) || 0;
             
             // Обновляем счет в матче
             document.querySelectorAll('.score')[0].textContent = scoreA;
@@ -993,27 +1151,47 @@
             const totalPoints = scoreA + scoreB;
             const gamePace = (totalPoints / elapsedMinutes).toFixed(2);
             
+            // Рассчитываем эффективность команд на основе статистики
+            const italyEfficiency = calculateEfficiency(italyTwoPointers, italyThreePointers, italyFreeThrows, italyRebounds, italyTurnovers);
+            const spainEfficiency = calculateEfficiency(spainTwoPointers, spainThreePointers, spainFreeThrows, spainRebounds, spainTurnovers);
+            
+            // Корректируем темп игры на основе эффективности
+            const efficiencyFactor = (italyEfficiency + spainEfficiency) / 2;
+            const adjustedGamePace = (parseFloat(gamePace) * efficiencyFactor).toFixed(2);
+            
             // Прогнозируем общее количество очков в матче
             let totalProjected;
             if (currentPeriod <= 4) {
-                totalProjected = Math.round(totalPoints + (gamePace * (48 - elapsedMinutes)));
+                totalProjected = Math.round(totalPoints + (adjustedGamePace * (48 - elapsedMinutes)));
             } else {
-                totalProjected = Math.round(totalPoints + (gamePace * (5 - (totalRemainingSeconds / 60))));
+                totalProjected = Math.round(totalPoints + (adjustedGamePace * (5 - (totalRemainingSeconds / 60))));
             }
+            
+            // Корректируем прогноз на основе фолов (больше фолов -> больше штрафных)
+            const foulFactor = 1 + ((italyFouls + spainFouls) / 40) * 0.1;
+            totalProjected = Math.round(totalProjected * foulFactor);
             
             // Прогнозируем окончательный счет
             const pointsDiff = scoreA - scoreB;
-            const paceDiff = pointsDiff / elapsedMinutes;
+            const efficiencyDiff = italyEfficiency - spainEfficiency;
             let projectedDiff;
             
             if (currentPeriod <= 4) {
-                projectedDiff = Math.round(pointsDiff + (paceDiff * (48 - elapsedMinutes)));
+                projectedDiff = Math.round(pointsDiff + (efficiencyDiff * (48 - elapsedMinutes)));
             } else {
-                projectedDiff = Math.round(pointsDiff + (paceDiff * (5 - (totalRemainingSeconds / 60))));
+                projectedDiff = Math.round(pointsDiff + (efficiencyDiff * (5 - (totalRemainingSeconds / 60))));
             }
             
+            // Рассчитываем вероятности победы
+            const winProbabilityA = calculateWinProbability(scoreA, scoreB, italyEfficiency, spainEfficiency, elapsedMinutes, currentPeriod);
+            const winProbabilityB = 100 - winProbabilityA;
+            
+            // Рассчитываем наши коэффициенты на основе вероятностей
+            const calculatedP1 = (100 / winProbabilityA).toFixed(2);
+            const calculatedP2 = (100 / winProbabilityB).toFixed(2);
+            
             // Определяем рекомендации
-            let totalRecommendation, handicapRecommendation;
+            let totalRecommendation, handicapRecommendation, recommendedBet;
             
             if (totalProjected > totalLine) {
                 totalRecommendation = "СТАВИТЬ НА БОЛЬШЕ";
@@ -1027,8 +1205,26 @@
                 handicapRecommendation = "СТАВИТЬ на команду Б";
             }
             
+            // Определяем рекомендуемую ставку
+            const valueBetP1 = (winProbabilityA / 100) > (1 / oddsP1);
+            const valueBetP2 = (winProbabilityB / 100) > (1 / oddsP2);
+            
+            if (valueBetP1 && valueBetP2) {
+                if ((winProbabilityA / 100) - (1 / oddsP1) > (winProbabilityB / 100) - (1 / oddsP2)) {
+                    recommendedBet = `П1 (${document.getElementById('team-a').textContent}) - VALUE BET`;
+                } else {
+                    recommendedBet = `П2 (${document.getElementById('team-b').textContent}) - VALUE BET`;
+                }
+            } else if (valueBetP1) {
+                recommendedBet = `П1 (${document.getElementById('team-a').textContent}) - VALUE BET`;
+            } else if (valueBetP2) {
+                recommendedBet = `П2 (${document.getElementById('team-b').textContent}) - VALUE BET`;
+            } else {
+                recommendedBet = "Нет выгодных ставок";
+            }
+            
             // Прогноз на конец периода
-            const periodProjection = Math.round((gamePace * 12));
+            const periodProjection = Math.round((adjustedGamePace * 12));
             
             // Обновляем UI с результатами
             document.getElementById('predicted-total').textContent = totalProjected;
@@ -1047,11 +1243,96 @@
             document.getElementById('handicap-recommendation').className = 'result-value ' + 
                 (projectedDiff > handicapLine ? 'positive' : 'negative');
                 
-            document.getElementById('game-pace').textContent = gamePace + " очков/минуту";
+            document.getElementById('game-pace').textContent = adjustedGamePace + " очков/минуту";
             document.getElementById('game-pace').className = 'result-value neutral';
             
             document.getElementById('period-prediction').textContent = periodProjection + " очков за период";
             document.getElementById('period-prediction').className = 'result-value neutral';
+            
+            document.getElementById('win-probability-a').textContent = winProbabilityA.toFixed(1) + "%";
+            document.getElementById('win-probability-a').className = 'result-value ' + 
+                (winProbabilityA > 50 ? 'positive' : 'negative');
+                
+            document.getElementById('win-probability-b').textContent = winProbabilityB.toFixed(1) + "%";
+            document.getElementById('win-probability-b').className = 'result-value ' + 
+                (winProbabilityB > 50 ? 'positive' : 'negative');
+                
+            document.getElementById('recommended-bet').textContent = recommendedBet;
+            document.getElementById('recommended-bet').className = 'result-value ' + 
+                (recommendedBet.includes('VALUE BET') ? 'positive' : 'neutral');
+            
+            // Обновляем расчетные коэффициенты
+            document.getElementById('calculated-p1').textContent = calculatedP1;
+            document.getElementById('calculated-p2').textContent = calculatedP2;
+            
+            // Расчет коэффициентов для тотала
+            const totalOverProbability = calculateTotalProbability(totalProjected, totalLine, true);
+            const totalUnderProbability = 100 - totalOverProbability;
+            
+            document.getElementById('calculated-total-over').textContent = (100 / totalOverProbability).toFixed(2);
+            document.getElementById('calculated-total-under').textContent = (100 / totalUnderProbability).toFixed(2);
+        }
+        
+        // Функция расчета эффективности команды
+        function calculateEfficiency(twoPointers, threePointers, freeThrows, rebounds, turnovers) {
+            // Извлекаем процент попадания штрафных бросков
+            const freeThrowMatch = freeThrows.match(/(\d+)\/(\d+)/);
+            let freeThrowPercentage = 0.7; // значение по умолчанию
+            
+            if (freeThrowMatch) {
+                const made = parseInt(freeThrowMatch[1]);
+                const attempts = parseInt(freeThrowMatch[2]);
+                freeThrowPercentage = attempts > 0 ? made / attempts : 0.7;
+            }
+            
+            // Рассчитываем эффективность на основе различных факторов
+            const points = twoPointers * 2 + threePointers * 3;
+            const shootingEfficiency = points / (twoPointers + threePointers) / 2;
+            const reboundEfficiency = rebounds / 40;
+            const turnoverEfficiency = 1 - (turnovers / 20);
+            
+            return 0.8 + (shootingEfficiency * 0.5 + freeThrowPercentage * 0.3 + reboundEfficiency * 0.1 + turnoverEfficiency * 0.1);
+        }
+        
+        // Функция расчета вероятности победы
+        function calculateWinProbability(scoreA, scoreB, efficiencyA, efficiencyB, elapsedMinutes, currentPeriod) {
+            const scoreDiff = scoreA - scoreB;
+            const efficiencyDiff = efficiencyA - efficiencyB;
+            
+            // Базовая вероятность на основе текущего счета
+            let baseProbability = 50 + (scoreDiff * 0.5);
+            
+            // Корректировка на основе эффективности
+            baseProbability += efficiencyDiff * 10;
+            
+            // Корректировка на основе оставшегося времени
+            let timeFactor;
+            if (currentPeriod <= 4) {
+                timeFactor = (48 - elapsedMinutes) / 48;
+            } else {
+                timeFactor = (5 - (elapsedMinutes - 48)) / 5;
+            }
+            
+            baseProbability = 50 + (baseProbability - 50) * timeFactor;
+            
+            // Ограничиваем вероятность в диапазоне 1-99%
+            return Math.max(1, Math.min(99, baseProbability));
+        }
+        
+        // Функция расчета вероятности тотала
+        function calculateTotalProbability(totalProjected, totalLine, isOver) {
+            const diff = Math.abs(totalProjected - totalLine);
+            let probability;
+            
+            if (diff <= 5) {
+                probability = isOver ? 50 : 50;
+            } else if (diff <= 10) {
+                probability = isOver ? (totalProjected > totalLine ? 65 : 35) : (totalProjected > totalLine ? 35 : 65);
+            } else {
+                probability = isOver ? (totalProjected > totalLine ? 75 : 25) : (totalProjected > totalLine ? 25 : 75);
+            }
+            
+            return probability;
         }
         
         // Инициализация расчетов при загрузке
