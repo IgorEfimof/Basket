@@ -3,10 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon196.png">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="BASKET">
-    <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Баскетбол. Калькулятор исходов</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -541,9 +537,9 @@
             <div class="team" id="team-a">Италия</div>
             <div class="vs">VS</div>
             <div class="team" id="team-b">Испания</div>
-            <div class="score">62</div>
+            <div class="score" id="score-a-display">62</div>
             <div class="score">:</div>
-            <div class="score">63</div>
+            <div class="score" id="score-b-display">63</div>
         </div>
         
         <div class="time-display">
@@ -813,6 +809,17 @@
             });
         });
         
+        // Автоматическое обновление счета при изменении очков
+        document.getElementById('score-a').addEventListener('input', function() {
+            document.getElementById('score-a-display').textContent = this.value || '0';
+            calculatePredictions();
+        });
+        
+        document.getElementById('score-b').addEventListener('input', function() {
+            document.getElementById('score-b-display').textContent = this.value || '0';
+            calculatePredictions();
+        });
+        
         // Обработчики для редактирования названий команд
         const teamFields = document.querySelectorAll('.team');
         teamFields.forEach(field => {
@@ -1061,10 +1068,14 @@
                 // Очищаем поля ввода
                 document.getElementById('total-line').value = '';
                 document.getElementById('handicap-line').value = '';
-                document.getElementById('time-remaining').value = '';
+                document.getElementById('time-remaining').value = '5:00';
                 document.getElementById('score-a').value = '';
                 document.getElementById('score-b').value = '';
                 document.getElementById('avg-points').value = '';
+                
+                // Сбрасываем счет
+                document.getElementById('score-a-display').textContent = '0';
+                document.getElementById('score-b-display').textContent = '0';
                 
                 // Сбрасываем период
                 document.getElementById('current-period').value = '3';
@@ -1072,24 +1083,27 @@
                 document.querySelector('[data-period="3"]').classList.add('active');
                 
                 // Сбрасываем статистику
-                document.getElementById('italy-free-throws').textContent = '9/13 (69%)';
-                document.getElementById('spain-free-throws').textContent = '13/17 (76%)';
-                document.getElementById('italy-two-pointers').textContent = '16';
-                document.getElementById('spain-two-pointers').textContent = '10';
-                document.getElementById('italy-three-pointers').textContent = '7';
-                document.getElementById('spain-three-pointers').textContent = '10';
-                document.getElementById('italy-fouls').textContent = '26';
-                document.getElementById('spain-fouls').textContent = '17';
-                document.getElementById('italy-rebounds').textContent = '32';
-                document.getElementById('spain-rebounds').textContent = '28';
-                document.getElementById('italy-turnovers').textContent = '12';
-                document.getElementById('spain-turnovers').textContent = '10';
+                document.getElementById('italy-free-throws').textContent = '0/0 (0%)';
+                document.getElementById('spain-free-throws').textContent = '0/0 (0%)';
+                document.getElementById('italy-two-pointers').textContent = '0';
+                document.getElementById('spain-two-pointers').textContent = '0';
+                document.getElementById('italy-three-pointers').textContent = '0';
+                document.getElementById('spain-three-pointers').textContent = '0';
+                document.getElementById('italy-fouls').textContent = '0';
+                document.getElementById('spain-fouls').textContent = '0';
+                document.getElementById('italy-rebounds').textContent = '0';
+                document.getElementById('spain-rebounds').textContent = '0';
+                document.getElementById('italy-turnovers').textContent = '0';
+                document.getElementById('spain-turnovers').textContent = '0';
                 
                 // Сбрасываем коэффициенты
-                document.getElementById('odds-p1').textContent = '1.81';
-                document.getElementById('odds-p2').textContent = '2.00';
-                document.getElementById('odds-total-over').textContent = '1.95';
-                document.getElementById('odds-total-under').textContent = '1.85';
+                document.getElementById('odds-p1').textContent = '1.00';
+                document.getElementById('odds-p2').textContent = '1.00';
+                document.getElementById('odds-total-over').textContent = '1.00';
+                document.getElementById('odds-total-under').textContent = '1.00';
+                
+                // Скрываем клавиатуру
+                keyboard.style.display = 'none';
                 
                 // Сбрасываем результаты
                 calculatePredictions();
@@ -1131,8 +1145,8 @@
             const oddsTotalUnder = parseFloat(document.getElementById('odds-total-under').textContent) || 0;
             
             // Обновляем счет в матче
-            document.querySelectorAll('.score')[0].textContent = scoreA;
-            document.querySelectorAll('.score')[2].textContent = scoreB;
+            document.getElementById('score-a-display').textContent = scoreA || '0';
+            document.getElementById('score-b-display').textContent = scoreB || '0';
             
             // Парсим оставшееся время
             const timeParts = timeRemaining.split(':');
@@ -1153,7 +1167,7 @@
             
             // Рассчитываем текущий темп игры (очков в минуту)
             const totalPoints = scoreA + scoreB;
-            const gamePace = (totalPoints / elapsedMinutes).toFixed(2);
+            const gamePace = totalPoints > 0 ? (totalPoints / elapsedMinutes).toFixed(2) : "0.00";
             
             // Рассчитываем эффективность команд на основе статистики
             const italyEfficiency = calculateEfficiency(italyTwoPointers, italyThreePointers, italyFreeThrows, italyRebounds, italyTurnovers);
@@ -1161,14 +1175,14 @@
             
             // Корректируем темп игры на основе эффективности
             const efficiencyFactor = (italyEfficiency + spainEfficiency) / 2;
-            const adjustedGamePace = (parseFloat(gamePace) * efficiencyFactor).toFixed(2);
+            const adjustedGamePace = totalPoints > 0 ? (parseFloat(gamePace) * efficiencyFactor).toFixed(2) : "0.00";
             
             // Прогнозируем общее количество очков в матче
             let totalProjected;
             if (currentPeriod <= 4) {
-                totalProjected = Math.round(totalPoints + (adjustedGamePace * (48 - elapsedMinutes)));
+                totalProjected = Math.round(totalPoints + (parseFloat(adjustedGamePace) * (48 - elapsedMinutes)));
             } else {
-                totalProjected = Math.round(totalPoints + (adjustedGamePace * (5 - (totalRemainingSeconds / 60))));
+                totalProjected = Math.round(totalPoints + (parseFloat(adjustedGamePace) * (5 - (totalRemainingSeconds / 60))));
             }
             
             // Корректируем прогноз на основе фолов (больше фолов -> больше штрафных)
@@ -1191,8 +1205,8 @@
             const winProbabilityB = 100 - winProbabilityA;
             
             // Рассчитываем наши коэффициенты на основе вероятностей
-            const calculatedP1 = (100 / winProbabilityA).toFixed(2);
-            const calculatedP2 = (100 / winProbabilityB).toFixed(2);
+            const calculatedP1 = winProbabilityA > 0 ? (100 / winProbabilityA).toFixed(2) : "0.00";
+            const calculatedP2 = winProbabilityB > 0 ? (100 / winProbabilityB).toFixed(2) : "0.00";
             
             // Определяем рекомендации
             let totalRecommendation, handicapRecommendation, recommendedBet;
@@ -1228,7 +1242,7 @@
             }
             
             // Прогноз на конец периода
-            const periodProjection = Math.round((adjustedGamePace * 12));
+            const periodProjection = Math.round((parseFloat(adjustedGamePace) * 12));
             
             // Обновляем UI с результатами
             document.getElementById('predicted-total').textContent = totalProjected;
@@ -1273,8 +1287,8 @@
             const totalOverProbability = calculateTotalProbability(totalProjected, totalLine, true);
             const totalUnderProbability = 100 - totalOverProbability;
             
-            document.getElementById('calculated-total-over').textContent = (100 / totalOverProbability).toFixed(2);
-            document.getElementById('calculated-total-under').textContent = (100 / totalUnderProbability).toFixed(2);
+            document.getElementById('calculated-total-over').textContent = totalOverProbability > 0 ? (100 / totalOverProbability).toFixed(2) : "0.00";
+            document.getElementById('calculated-total-under').textContent = totalUnderProbability > 0 ? (100 / totalUnderProbability).toFixed(2) : "0.00";
         }
         
         // Функция расчета эффективности команды
@@ -1291,7 +1305,7 @@
             
             // Рассчитываем эффективность на основе различных факторов
             const points = twoPointers * 2 + threePointers * 3;
-            const shootingEfficiency = points / (twoPointers + threePointers) / 2;
+            const shootingEfficiency = (twoPointers + threePointers) > 0 ? points / (twoPointers + threePointers) / 2 : 0.8;
             const reboundEfficiency = rebounds / 40;
             const turnoverEfficiency = 1 - (turnovers / 20);
             
