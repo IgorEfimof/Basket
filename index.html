@@ -3,10 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon196.png">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="BASKET">
-    <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Баскетбол. Калькулятор исходов</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -638,13 +634,17 @@
                     4×4 (2×10 мин)
                     <div class="championship-format">2 тайма по 10 минут</div>
                 </div>
+                <div class="championship-option" data-format="cyber" data-periods="4" data-period-length="5" data-ot-length="2">
+                    Кибербаскетбол (4×5 мин)
+                    <div class="championship-format">4 периода по 5 минут, овертайм 2 минуты</div>
+                </div>
             </div>
         </div>
         
         <header>
             <h1>Баскетбол. Калькулятор исходов</h1>
             <div class="match-details">
-                Разгромим букмекера в пух и прах
+                Мужчины. Групповой этап. Группа A
             </div>
         </header>
         
@@ -908,7 +908,8 @@
             'fibra': { name: 'ФИБА (4×10 мин)', periods: 4, periodLength: 10, otLength: 5, description: '4 периода по 10 минут, овертайм 5 минут' },
             'three3-long': { name: '3×3 (4×12 мин)', periods: 4, periodLength: 12, otLength: 2, description: '4 периода по 12 минут, овертайм 2 минуты' },
             'three3-short': { name: '3×3 (4×10 мин)', periods: 4, periodLength: 10, otLength: 2, description: '4 периода по 10 минут, овертайм 2 минуты' },
-            'four4': { name: '4×4 (2×10 мин)', periods: 2, periodLength: 10, otLength: 3, description: '2 тайма по 10 минут, овертайм 3 минуты' }
+            'four4': { name: '4×4 (2×10 мин)', periods: 2, periodLength: 10, otLength: 3, description: '2 тайма по 10 минут, овертайм 3 минуты' },
+            'cyber': { name: 'Кибербаскетбол (4×5 мин)', periods: 4, periodLength: 5, otLength: 2, description: '4 периода по 5 минут, овертайм 2 минуты' }
         };
 
         // Текущий выбранный чемпионат
@@ -1107,7 +1108,7 @@
             });
         });
         
-        // Обработчики для редактируемой статистики
+        // Обработчики для редактируемой статистика
         const statFields = document.querySelectorAll('.stats-editable');
         statFields.forEach(field => {
             field.addEventListener('click', function(e) {
@@ -1283,7 +1284,7 @@
             });
         });
         
-        // Обработчики вкладок
+        // Обработчики вкладки
         document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', function() {
                 const tabId = this.dataset.tab;
@@ -1398,6 +1399,7 @@
         // Функция расчета прогнозов с учетом статистики и времени
         function calculatePredictions() {
             const champ = championships[currentChampionship];
+            const isCyber = champ.periodLength === 5; // Определяем, является ли чемпионат кибербаскетболом
             
             // Получаем значения из формы
             const totalLine = parseFloat(document.getElementById('total-line').value) || 0;
@@ -1406,7 +1408,7 @@
             const timeRemaining = document.getElementById('time-remaining').value;
             const scoreA = parseInt(document.getElementById('score-a').value) || 0;
             const scoreB = parseInt(document.getElementById('score-b').value) || 0;
-            const avgPoints = parseInt(document.getElementById('avg-points').value) || 45;
+            const avgPoints = parseInt(document.getElementById('avg-points').value) || (isCyber ? 45 : 45);
             
             // Получаем значения статистики
             const italyFreeThrows = document.getElementById('italy-free-throws').textContent;
@@ -1605,7 +1607,8 @@
             // Базовый коэффициент в зависимости от периода
             let baseFactor;
             const periodNum = period === 'ot' ? champ.periods + 1 : parseInt(period);
-            
+            const isCyber = champ.periodLength === 5; // Проверка на кибербаскетбол
+
             if (periodNum <= champ.periods) {
                 // Основные периоды
                 if (champ.periods === 2) {
@@ -1614,10 +1617,10 @@
                 } else {
                     // Для формата с четырьмя периодами
                     switch(periodNum) {
-                        case 1: baseFactor = 1.1; break;
+                        case 1: baseFactor = isCyber ? 1.0 : 1.1; break; // В кибербаскетболе темп более ровный
                         case 2: baseFactor = 1.0; break;
-                        case 3: baseFactor = 0.95; break;
-                        case 4: baseFactor = 0.9; break;
+                        case 3: baseFactor = isCyber ? 1.0 : 0.95; break; // В кибербаскетболе темп более ровный
+                        case 4: baseFactor = isCyber ? 0.95 : 0.9; break; // Небольшое замедление в конце
                         default: baseFactor = 1.0;
                     }
                 }
@@ -1625,12 +1628,13 @@
                 // Овертайм
                 baseFactor = 1.0;
             }
-            
+
             // Корректировка на основе оставшегося времени
-            // В конце периода темп обычно замедляется
+            // В конце периода темп обычно замедляется. Эффект более выражен в длительных периодах.
             const periodLength = periodNum <= champ.periods ? champ.periodLength : champ.otLength;
-            const timeFactor = 1 - (remainingSeconds / (periodLength * 60)) * 0.2;
-            
+            const timeImpact = isCyber ? 0.1 : 0.2; // Меньшее влияние оставшегося времени в кибербаскетболе
+            const timeFactor = 1 - (remainingSeconds / (periodLength * 60)) * timeImpact;
+
             return baseFactor * timeFactor;
         }
         
@@ -1659,9 +1663,12 @@
         function calculateWinProbability(scoreA, scoreB, efficiencyA, efficiencyB, elapsedMinutes, currentPeriod, timeFactor, champ) {
             const scoreDiff = scoreA - scoreB;
             const efficiencyDiff = efficiencyA - efficiencyB;
+            const isCyber = champ.periodLength === 5; // Проверка на кибербаскетбол
             
             // Базовая вероятность на основе текущего счета
-            let baseProbability = 50 + (scoreDiff * 0.5);
+            // Для кибербаскетбола разрыв в очках весит немного больше
+            const scoreWeight = isCyber ? 0.7 : 0.5;
+            let baseProbability = 50 + (scoreDiff * scoreWeight);
             
             // Корректировка на основе эффективности
             baseProbability += efficiencyDiff * 10;
